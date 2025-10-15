@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 
+export interface Activity {
+  id: string;
+  type: "hiking" | "camping";
+  date: string; // ISO date string
+  location: string;
+  miles?: number; // Only for hiking
+  nights?: number; // Only for camping
+}
+
 export interface Person {
   id: string;
   name: string;
-  miles: number;
-  nights: number;
+  activities: Activity[];
 }
 
 const LOCAL_STORAGE_KEY = "hiking_camping_tracker_people";
@@ -30,24 +38,33 @@ export function usePeopleTracker() {
     const newPerson: Person = {
       id: uuidv4(),
       name: name.trim(),
-      miles: 0,
-      nights: 0,
+      activities: [],
     };
     setPeople((prevPeople) => [...prevPeople, newPerson]);
   };
 
-  const updatePersonMiles = (id: string, delta: number) => {
+  const addActivity = (personId: string, newActivity: Omit<Activity, 'id'>) => {
     setPeople((prevPeople) =>
       prevPeople.map((person) =>
-        person.id === id ? { ...person, miles: Math.max(0, person.miles + delta) } : person,
+        person.id === personId
+          ? {
+              ...person,
+              activities: [...person.activities, { ...newActivity, id: uuidv4() }],
+            }
+          : person,
       ),
     );
   };
 
-  const updatePersonNights = (id: string, delta: number) => {
+  const deleteActivity = (personId: string, activityId: string) => {
     setPeople((prevPeople) =>
       prevPeople.map((person) =>
-        person.id === id ? { ...person, nights: Math.max(0, person.nights + delta) } : person,
+        person.id === personId
+          ? {
+              ...person,
+              activities: person.activities.filter((activity) => activity.id !== activityId),
+            }
+          : person,
       ),
     );
   };
@@ -56,11 +73,21 @@ export function usePeopleTracker() {
     setPeople((prevPeople) => prevPeople.filter((person) => person.id !== id));
   };
 
+  const getPersonTotals = (personId: string) => {
+    const person = people.find((p) => p.id === personId);
+    if (!person) return { totalMiles: 0, totalNights: 0 };
+
+    const totalMiles = person.activities.reduce((sum, activity) => sum + (activity.miles || 0), 0);
+    const totalNights = person.activities.reduce((sum, activity) => sum + (activity.nights || 0), 0);
+    return { totalMiles, totalNights };
+  };
+
   return {
     people,
     addPerson,
-    updatePersonMiles,
-    updatePersonNights,
+    addActivity,
+    deleteActivity,
     deletePerson,
+    getPersonTotals,
   };
 }

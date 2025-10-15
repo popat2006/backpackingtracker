@@ -1,55 +1,91 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, Trash2 } from "lucide-react";
-import { Person } from "@/hooks/usePeopleTracker";
+import { Plus, Trash2, Mountain, Tent } from "lucide-react";
+import { Person, Activity } from "@/hooks/usePeopleTracker";
+import { format } from "date-fns";
+import { Separator } from "@/components/ui/separator";
 
 interface PersonCardProps {
   person: Person;
-  onUpdateMiles: (id: string, delta: number) => void;
-  onUpdateNights: (id: string, delta: number) => void;
   onDeletePerson: (id: string) => void;
+  onAddActivityClick: (personId: string) => void;
+  onDeleteActivity: (personId: string, activityId: string) => void;
+  totalMiles: number;
+  totalNights: number;
 }
 
 const PersonCard: React.FC<PersonCardProps> = ({
   person,
-  onUpdateMiles,
-  onUpdateNights,
   onDeletePerson,
+  onAddActivityClick,
+  onDeleteActivity,
+  totalMiles,
+  totalNights,
 }) => {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-xl font-medium">{person.name}</CardTitle>
-        <Button variant="destructive" size="icon" onClick={() => onDeletePerson(person.id)}>
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => onAddActivityClick(person.id)}>
+            <Plus className="h-4 w-4" />
+          </Button>
+          <Button variant="destructive" size="icon" onClick={() => onDeletePerson(person.id)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Hiking Miles:</p>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => onUpdateMiles(person.id, -1)}>
-              <Minus className="h-4 w-4" />
-            </Button>
-            <span className="text-lg font-bold w-10 text-center">{person.miles}</span>
-            <Button variant="outline" size="icon" onClick={() => onUpdateMiles(person.id, 1)}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground">Total Hiking Miles:</p>
+          <span className="text-lg font-bold">{totalMiles}</span>
         </div>
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Camping Nights:</p>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => onUpdateNights(person.id, -1)}>
-              <Minus className="h-4 w-4" />
-            </Button>
-            <span className="text-lg font-bold w-10 text-center">{person.nights}</span>
-            <Button variant="outline" size="icon" onClick={() => onUpdateNights(person.id, 1)}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground">Total Camping Nights:</p>
+          <span className="text-lg font-bold">{totalNights}</span>
         </div>
+
+        <Separator className="my-2" />
+
+        <CardDescription className="text-md font-semibold">Activities:</CardDescription>
+        {person.activities.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center">No activities logged yet.</p>
+        ) : (
+          <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
+            {person.activities
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Sort by date descending
+              .map((activity) => (
+                <div key={activity.id} className="flex items-center justify-between bg-muted/50 p-3 rounded-md">
+                  <div className="flex items-center gap-2">
+                    {activity.type === "hiking" ? (
+                      <Mountain className="h-4 w-4 text-blue-500" />
+                    ) : (
+                      <Tent className="h-4 w-4 text-green-500" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">
+                        {activity.location} ({format(new Date(activity.date), "MMM dd, yyyy")})
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {activity.type === "hiking"
+                          ? `${activity.miles || 0} miles`
+                          : `${activity.nights || 0} nights`}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDeleteActivity(person.id, activity.id)}
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

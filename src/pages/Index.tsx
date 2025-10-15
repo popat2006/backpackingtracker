@@ -1,10 +1,25 @@
+import React, { useState } from "react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { usePeopleTracker } from "@/hooks/usePeopleTracker";
+import { usePeopleTracker, Activity } from "@/hooks/usePeopleTracker";
 import AddPersonForm from "@/components/AddPersonForm";
 import PersonCard from "@/components/PersonCard";
+import AddActivityForm from "@/components/AddActivityForm";
 
 const Index = () => {
-  const { people, addPerson, updatePersonMiles, updatePersonNights, deletePerson } = usePeopleTracker();
+  const { people, addPerson, addActivity, deleteActivity, deletePerson, getPersonTotals } = usePeopleTracker();
+  const [isAddActivityFormOpen, setIsAddActivityFormOpen] = useState(false);
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+
+  const handleAddActivityClick = (personId: string) => {
+    setSelectedPersonId(personId);
+    setIsAddActivityFormOpen(true);
+  };
+
+  const handleAddActivitySubmit = (newActivity: Omit<Activity, "id">) => {
+    if (selectedPersonId) {
+      addActivity(selectedPersonId, newActivity);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50">
@@ -22,17 +37,28 @@ const Index = () => {
             No people added yet. Add someone to start tracking!
           </p>
         ) : (
-          people.map((person) => (
-            <PersonCard
-              key={person.id}
-              person={person}
-              onUpdateMiles={updatePersonMiles}
-              onUpdateNights={updatePersonNights}
-              onDeletePerson={deletePerson}
-            />
-          ))
+          people.map((person) => {
+            const { totalMiles, totalNights } = getPersonTotals(person.id);
+            return (
+              <PersonCard
+                key={person.id}
+                person={person}
+                onDeletePerson={deletePerson}
+                onAddActivityClick={handleAddActivityClick}
+                onDeleteActivity={deleteActivity}
+                totalMiles={totalMiles}
+                totalNights={totalNights}
+              />
+            );
+          })
         )}
       </div>
+
+      <AddActivityForm
+        isOpen={isAddActivityFormOpen}
+        onClose={() => setIsAddActivityFormOpen(false)}
+        onAddActivity={handleAddActivitySubmit}
+      />
       <MadeWithDyad />
     </div>
   );
