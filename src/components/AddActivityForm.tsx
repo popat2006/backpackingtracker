@@ -10,13 +10,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Activity } from "@/hooks/usePeopleTracker";
+import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
 
 interface AddActivityFormProps {
   isOpen: boolean;
@@ -29,7 +29,8 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({
   onClose,
   onAddActivity,
 }) => {
-  const [activityType, setActivityType] = useState<"hiking" | "camping">("hiking");
+  const [isHiking, setIsHiking] = useState(true); // Default to hiking selected
+  const [isCamping, setIsCamping] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [location, setLocation] = useState("");
   const [miles, setMiles] = useState<number | string>("");
@@ -37,17 +38,17 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!date || !location.trim()) {
+    if (!date || !location.trim() || (!isHiking && !isCamping)) {
       // You might want to add a toast notification here for validation
       return;
     }
 
     const newActivity: Omit<Activity, "id"> = {
-      type: activityType,
+      type: isHiking ? "hiking" : "camping", // Default type if both or neither are selected
       date: date.toISOString().split('T')[0], // Format as YYYY-MM-DD
       location: location.trim(),
-      miles: typeof miles === 'string' && miles.trim() !== '' ? parseFloat(miles) : 0,
-      nights: typeof nights === 'string' && nights.trim() !== '' ? parseFloat(nights) : 0,
+      miles: isHiking && typeof miles === 'string' && miles.trim() !== '' ? parseFloat(miles) : 0,
+      nights: isCamping && typeof nights === 'string' && nights.trim() !== '' ? parseFloat(nights) : 0,
     };
 
     onAddActivity(newActivity);
@@ -56,7 +57,8 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({
   };
 
   const resetForm = () => {
-    setActivityType("hiking");
+    setIsHiking(true);
+    setIsCamping(false);
     setDate(new Date());
     setLocation("");
     setMiles("");
@@ -77,21 +79,24 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({
             <Label htmlFor="activityType" className="text-right">
               Type
             </Label>
-            <RadioGroup
-              defaultValue="hiking"
-              value={activityType}
-              onValueChange={(value: "hiking" | "camping") => setActivityType(value)}
-              className="flex items-center space-x-4 col-span-3"
-            >
+            <div className="flex items-center space-x-4 col-span-3">
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="hiking" id="hiking" />
-                <Label htmlFor="hiking">Hiking</Label>
+                <Checkbox
+                  id="isHiking"
+                  checked={isHiking}
+                  onCheckedChange={(checked) => setIsHiking(!!checked)}
+                />
+                <Label htmlFor="isHiking">Hiking</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="camping" id="camping" />
-                <Label htmlFor="camping">Camping</Label>
+                <Checkbox
+                  id="isCamping"
+                  checked={isCamping}
+                  onCheckedChange={(checked) => setIsCamping(!!checked)}
+                />
+                <Label htmlFor="isCamping">Camping</Label>
               </div>
-            </RadioGroup>
+            </div>
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
@@ -135,33 +140,37 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="miles" className="text-right">
-              Miles
-            </Label>
-            <Input
-              id="miles"
-              type="number"
-              value={miles}
-              onChange={(e) => setMiles(e.target.value)}
-              className="col-span-3"
-              min="0"
-            />
-          </div>
+          {isHiking && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="miles" className="text-right">
+                Miles
+              </Label>
+              <Input
+                id="miles"
+                type="number"
+                value={miles}
+                onChange={(e) => setMiles(e.target.value)}
+                className="col-span-3"
+                min="0"
+              />
+            </div>
+          )}
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="nights" className="text-right">
-              Nights
-            </Label>
-            <Input
-              id="nights"
-              type="number"
-              value={nights}
-              onChange={(e) => setNights(e.target.value)}
-              className="col-span-3"
-              min="0"
-            />
-          </div>
+          {isCamping && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="nights" className="text-right">
+                Nights
+              </Label>
+              <Input
+                id="nights"
+                type="number"
+                value={nights}
+                onChange={(e) => setNights(e.target.value)}
+                className="col-span-3"
+                min="0"
+              />
+            </div>
+          )}
           <DialogFooter>
             <Button type="submit">Add Activity</Button>
           </DialogFooter>
