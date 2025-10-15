@@ -4,10 +4,14 @@ import { usePeopleTracker, Activity } from "@/hooks/usePeopleTracker";
 import AddPersonForm from "@/components/AddPersonForm";
 import PersonCard from "@/components/PersonCard";
 import AddActivityForm from "@/components/AddActivityForm";
+import ActivityChart from "@/components/ActivityChart"; // Import the new chart component
+import { Button } from "@/components/ui/button"; // Import Button
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"; // Import Dialog components
 
 const Index = () => {
   const { people, addPerson, addActivity, deleteActivity, deletePerson, getPersonTotals } = usePeopleTracker();
   const [isAddActivityFormOpen, setIsAddActivityFormOpen] = useState(false);
+  const [isChartOpen, setIsChartOpen] = useState(false); // State for chart dialog
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
 
   const handleAddActivityClick = (personId: string) => {
@@ -27,8 +31,19 @@ const Index = () => {
         Hiking & Camping Tracker
       </h1>
 
-      <div className="w-full max-w-2xl mb-8">
+      <div className="w-full max-w-2xl mb-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
         <AddPersonForm onAddPerson={addPerson} />
+        <Dialog open={isChartOpen} onOpenChange={setIsChartOpen}>
+          <DialogTrigger asChild>
+            <Button className="w-full sm:w-auto">View Activity Summary</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[700px]">
+            <DialogHeader>
+              <DialogTitle>Activity Summary Chart</DialogTitle>
+            </DialogHeader>
+            <ActivityChart people={people} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-6">
