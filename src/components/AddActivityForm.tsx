@@ -46,13 +46,9 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({
       type: activityType,
       date: date.toISOString().split('T')[0], // Format as YYYY-MM-DD
       location: location.trim(),
+      miles: typeof miles === 'string' && miles.trim() !== '' ? parseFloat(miles) : 0,
+      nights: typeof nights === 'string' && nights.trim() !== '' ? parseFloat(nights) : 0,
     };
-
-    if (activityType === "hiking") {
-      newActivity.miles = typeof miles === 'string' ? parseFloat(miles) : miles;
-    } else {
-      newActivity.nights = typeof nights === 'string' ? parseFloat(nights) : nights;
-    }
 
     onAddActivity(newActivity);
     resetForm();
@@ -139,37 +135,33 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({
             />
           </div>
 
-          {activityType === "hiking" ? (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="miles" className="text-right">
-                Miles
-              </Label>
-              <Input
-                id="miles"
-                type="number"
-                value={miles}
-                onChange={(e) => setMiles(e.target.value)}
-                className="col-span-3"
-                min="0"
-                required
-              />
-            </div>
-          ) : (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="nights" className="text-right">
-                Nights
-              </Label>
-              <Input
-                id="nights"
-                type="number"
-                value={nights}
-                onChange={(e) => setNights(e.target.value)}
-                className="col-span-3"
-                min="0"
-                required
-              />
-            </div>
-          )}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="miles" className="text-right">
+              Miles
+            </Label>
+            <Input
+              id="miles"
+              type="number"
+              value={miles}
+              onChange={(e) => setMiles(e.target.value)}
+              className="col-span-3"
+              min="0"
+            />
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="nights" className="text-right">
+              Nights
+            </Label>
+            <Input
+              id="nights"
+              type="number"
+              value={nights}
+              onChange={(e) => setNights(e.target.value)}
+              className="col-span-3"
+              min="0"
+            />
+          </div>
           <DialogFooter>
             <Button type="submit">Add Activity</Button>
           </DialogFooter>
