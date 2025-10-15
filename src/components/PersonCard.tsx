@@ -68,9 +68,13 @@ const PersonCard: React.FC<PersonCardProps> = ({
                         {activity.location} ({format(new Date(activity.date), "MMM dd, yyyy")})
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {activity.type === "hiking"
-                          ? `${activity.miles || 0} miles`
-                          : `${activity.nights || 0} nights`}
+                        {activity.miles > 0 && activity.nights > 0
+                          ? `${activity.miles} miles, ${activity.nights} nights`
+                          : activity.miles > 0
+                          ? `${activity.miles} miles`
+                          : activity.nights > 0
+                          ? `${activity.nights} nights`
+                          : "No metrics logged"}
                       </p>
                     </div>
                   </div>
