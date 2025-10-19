@@ -7,15 +7,10 @@ import AddActivityForm from "@/components/AddActivityForm";
 import ActivityChart from "@/components/ActivityChart";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useSession } from "@/components/SessionContextProvider";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { showError, showSuccess } from "@/utils/toast";
 
 const Index = () => {
   const { people, addPerson, addActivity, deleteActivity, deletePerson, getPersonTotals, isLoading, error } = usePeopleTracker();
-  const { user, isLoading: isSessionLoading } = useSession();
-  const navigate = useNavigate();
 
   const [isAddActivityFormOpen, setIsAddActivityFormOpen] = useState(false);
   const [isChartOpen, setIsChartOpen] = useState(false);
@@ -32,17 +27,7 @@ const Index = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      showError("Failed to sign out: " + error.message);
-    } else {
-      showSuccess("Signed out successfully!");
-      navigate('/login');
-    }
-  };
-
-  if (isLoading || isSessionLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <p className="text-lg text-gray-600 dark:text-gray-400">Loading your data...</p>
@@ -66,7 +51,7 @@ const Index = () => {
         <h1 className="text-5xl font-extrabold text-blue-600 dark:text-blue-400">
           Hiking & Camping Tracker
         </h1>
-        <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+        {/* Sign-out button removed */}
       </div>
 
       <div className="w-full max-w-2xl mb-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
