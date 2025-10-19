@@ -1,20 +1,88 @@
 import React, { useState } from "react";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { usePeopleTracker, Activity } from "@/hooks/usePeopleTracker";
 import AddPersonForm from "@/components/AddPersonForm";
 import PersonCard from "@/components/PersonCard";
 import AddActivityForm from "@/components/AddActivityForm";
 import ActivityChart from "@/components/ActivityChart";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { showError, showSuccess } from "@/utils/toast";
+import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+
+// Define types for local state
+export interface Activity {
+  id: string;
+  type: "hiking" | "camping";
+  date: string; // YYYY-MM-DD
+  location: string;
+  miles?: number; // Only for hiking
+  nights?: number; // Only for camping
+}
+
+export interface Person {
+  id: string;
+  name: string;
+  activities: Activity[];
+}
 
 const Index = () => {
-  const { people, addPerson, addActivity, deleteActivity, deletePerson, getPersonTotals, isLoading, error } = usePeopleTracker();
-
+  const [people, setPeople] = useState<Person[]>([]);
   const [isAddActivityFormOpen, setIsAddActivityFormOpen] = useState(false);
   const [isChartOpen, setIsChartOpen] = useState(false);
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+
+  const addPerson = (name: string) => {
+    const newPerson: Person = {
+      id: uuidv4(),
+      name: name.trim(),
+      activities: [],
+    };
+    setPeople((prevPeople) => [...prevPeople, newPerson]);
+  };
+
+  const addActivity = (personId: string, newActivity: Omit<Activity, 'id'>) => {
+    const activityWithId: Activity = {
+      ...newActivity,
+      id: uuidv4(),
+      miles: newActivity.miles || 0,
+      nights: newActivity.nights || 0,
+    };
+    setPeople((prevPeople) =>
+      prevPeople.map((person) =>
+        person.id === personId
+          ? {
+              ...person,
+              activities: [...person.activities, activityWithId],
+            }
+          : person,
+      ),
+    );
+  };
+
+  const deleteActivity = (personId: string, activityId: string) => {
+    setPeople((prevPeople) =>
+      prevPeople.map((person) =>
+        person.id === personId
+          ? {
+              ...person,
+              activities: person.activities.filter((activity) => activity.id !== activityId),
+            }
+          : person,
+      ),
+    );
+  };
+
+  const deletePerson = (id: string) => {
+    setPeople((prevPeople) => prevPeople.filter((person) => person.id !== id));
+  };
+
+  const getPersonTotals = (personId: string) => {
+    const person = people.find((p) => p.id === personId);
+    if (!person) return { totalMiles: 0, totalNights: 0 };
+
+    const totalMiles = person.activities.reduce((sum, activity) => sum + (activity.miles || 0), 0);
+    const totalNights = person.activities.reduce((sum, activity) => sum + (activity.nights || 0), 0);
+    return { totalMiles, totalNights };
+  };
 
   const handleAddActivityClick = (personId: string) => {
     setSelectedPersonId(personId);
@@ -27,31 +95,12 @@ const Index = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <p className="text-lg text-gray-600 dark:text-gray-400">Loading your data...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-        <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error</h2>
-        <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">{error}</p>
-        <Button onClick={() => window.location.reload()}>Try Again</Button>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50">
       <div className="w-full max-w-2xl flex justify-between items-center mb-8">
         <h1 className="text-5xl font-extrabold text-blue-600 dark:text-blue-400">
           Hiking & Camping Tracker
         </h1>
-        {/* Sign-out button removed */}
       </div>
 
       <div className="w-full max-w-2xl mb-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
