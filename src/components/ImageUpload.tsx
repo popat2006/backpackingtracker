@@ -1,48 +1,85 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, ImagePlus } from "lucide-react";
+import { X, ImagePlus, Loader2 } from "lucide-react";
 import { HikePhoto } from "@/types/hike";
 import { v4 as uuidv4 } from "uuid";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ImageUploadProps {
   photos: HikePhoto[];
   onChange: (photos: HikePhoto[]) => void;
   maxPhotos?: number;
+  hikeId?: string;
+  campingTripId?: string;
 }
 
-const ImageUpload = ({ photos, onChange, maxPhotos = 10 }: ImageUploadProps) => {
+const ImageUpload = ({ photos, onChange, maxPhotos = 10, hikeId, campingTripId }: ImageUploadProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadToSupabase = async (file: File): Promise<HikePhoto | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${uuidv4()}.${fileExt}`;
+    const filePath = `public/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from('hike-photos')
+      .upload(filePath, file);
+
+    if (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from('hike-photos')
+      .getPublicUrl(filePath);
+
+    return {
+      id: uuidv4(),
+      dataUrl: data.publicUrl,
+      caption: '',
+      uploadedAt: new Date().toISOString(),
+    };
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach((file) => {
-      if (photos.length >= maxPhotos) return;
-      if (!file.type.startsWith("image/")) return;
+    setUploading(true);
+    for (const file of Array.from(files)) {
+      if (photos.length >= maxPhotos) break;
+      if (!file.type.startsWith("image/")) continue;
 
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
-        const newPhoto: HikePhoto = {
-          id: uuidv4(),
-          dataUrl,
-          caption: "",
-          uploadedAt: new Date().toISOString(),
-        };
-        onChange([...photos, newPhoto]);
-      };
-      reader.readAsDataURL(file);
-    });
+      const photo = await uploadToSupabase(file);
+      if (photo) {
+        onChange([...photos, photo]);
+      }
+    }
+    setUploading(false);
     e.target.value = "";
   };
 
-  const removePhoto = (id: string) => {
-    onChange(photos.filter((p) => p.id !== id));
+  const removePhoto = async (id: string) => {
+    const photo = photos.find(p => p.id === id);
+    if (photo) {
+      // Extract file path from URL and delete from storage
+      try {
+        const url = new URL(photo.dataUrl);
+        const path = url.pathname.split('/hike-photos/')[1];
+        if (path) {
+          await supabase.storage.from('hike-photos').remove([path]);
+        }
+      } catch {
+        // Ignore URL parsing errors for old base64 photos
+      }
+      onChange(photos.filter(p => p.id !== id));
+    }
   };
 
   const updateCaption = (id: string, caption: string) => {
-    onChange(photos.map((p) => (p.id === id ? { ...p, caption } : p)));
+    onChange(photos.map(p => (p.id === id ? { ...p, caption } : p)));
   };
 
   return (
@@ -71,10 +108,17 @@ const ImageUpload = ({ photos, onChange, maxPhotos = 10 }: ImageUploadProps) => 
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 hover:border-blue-400 transition-colors"
+            disabled={uploading}
+            className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 hover:border-blue-400 transition-colors disabled:opacity-50"
           >
-            <ImagePlus className="w-6 h-6 text-gray-400" />
-            <span className="text-[10px] text-gray-400">Add Photo</span>
+            {uploading ? (
+              <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+            ) : (
+              <>
+                <ImagePlus className="w-6 h-6 text-gray-400" />
+                <span className="text-[10px] text-gray-400">Add Photo</span>
+              </>
+            )}
           </button>
         )}
       </div>
