@@ -6,6 +6,7 @@ import AddActivityForm from "@/components/AddActivityForm";
 import ActivityChart from "@/components/ActivityChart";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 
 // Define types for local state
@@ -25,6 +26,7 @@ export interface Person {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const [people, setPeople] = useState<Person[]>([]);
   const [isAddActivityFormOpen, setIsAddActivityFormOpen] = useState(false);
   const [isChartOpen, setIsChartOpen] = useState(false);
@@ -116,6 +118,9 @@ const Index = () => {
             <ActivityChart people={people} />
           </DialogContent>
         </Dialog>
+        <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate("/summary")}>
+          View Journal Summary
+        </Button>
       </div>
 
       <div className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-6">
