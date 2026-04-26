@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hiking & Camping Tracker</title>
+    <script>
+      // GitHub Pages SPA redirect trick
+      (function() {
+        var redirect = sessionStorage.getItem('spa_redirect');
+        if (redirect) {
+          sessionStorage.removeItem('spa_redirect');
+          var path = redirect.replace(/^\//, '').replace(/^backpackingtracker\//, '');
+          if (path) {
+            var target = window.location.origin + '/backpackingtracker/#' + path;
+            window.location.replace(target);
+          }
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/backpackingtracker/assets/index-D62tYITt.js"></script>
+    <link rel="stylesheet" crossorigin href="/backpackingtracker/assets/index-C9DNpKbC.css">
+  </head>
+
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
