@@ -27,14 +27,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Debug - List dist folder
-        run: |
-          echo "=== Dist folder contents ==="
-          ls -la dist/ || echo "dist folder not found!"
-          echo "=== Dist/index.html ==="
-          cat dist/index.html || echo "index.html not found!"
-        continue-on-error: true
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
