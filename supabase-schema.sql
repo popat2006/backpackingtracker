@@ -34,7 +34,7 @@ create table if not exists hike_photos (
   )
 );
 
--- Enable Row Level Security (will open up for now, configure auth later)
+-- Enable Row Level Security (open for now, configure auth later)
 alter table hikes enable row level security;
 alter table camping_trips enable row level security;
 alter table hike_photos enable row level security;
@@ -44,6 +44,6 @@ create policy if not exists "Allow all" on hikes for all using (true) with check
 create policy if not exists "Allow all" on camping_trips for all using (true) with check (true);
 create policy if not exists "Allow all" on hike_photos for all using (true) with check (true);
 
--- Create storage bucket for photos
-insert into storage.buckets (id, name, public) values ('hike-photos', 'hike-photos', true)
-on conflict (id) do nothing;
+-- Create storage bucket for photos (run this in Storage > Create bucket if UI fails)
+-- insert into storage.buckets (id, name, public) values ('hike-photos', 'hike-photos', true)
+-- on conflict (id) do nothing;
