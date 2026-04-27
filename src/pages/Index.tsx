@@ -14,20 +14,33 @@ const Index = () => {
   const [hikes, setHikes] = useState<Hike[]>([]);
   const [campingTrips, setCampingTrips] = useState<CampingTrip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showHikeForm, setShowHikeForm] = useState(false);
   const [showCampingForm, setShowCampingForm] = useState(false);
 
-  // Fetch data from Supabase
   const fetchData = async () => {
     setLoading(true);
-    const [hikesRes, campingRes] = await Promise.all([
-      supabase.from("hikes").select("*").order("date", { ascending: false }),
-      supabase.from("camping_trips").select("*").order("date", { ascending: false }),
-    ]);
+    setError(null);
+    try {
+      const [hikesRes, campingRes] = await Promise.all([
+        supabase.from("hikes").select("*").order("date", { ascending: false }),
+        supabase.from("camping_trips").select("*").order("date", { ascending: false }),
+      ]);
 
-    if (hikesRes.data) {
+      if (hikesRes.error) {
+        setError("Error fetching hikes: " + hikesRes.error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (campingRes.error) {
+        setError("Error fetching camping trips: " + campingRes.error.message);
+        setLoading(false);
+        return;
+      }
+
       const hikesWithPhotos = await Promise.all(
-        hikesRes.data.map(async (h: any) => {
+        (hikesRes.data || []).map(async (h: any) => {
           const { data: photos } = await supabase
             .from("hike_photos")
             .select("*")
@@ -50,11 +63,9 @@ const Index = () => {
         })
       );
       setHikes(hikesWithPhotos);
-    }
 
-    if (campingRes.data) {
       const tripsWithPhotos = await Promise.all(
-        campingRes.data.map(async (t: any) => {
+        (campingRes.data || []).map(async (t: any) => {
           const { data: photos } = await supabase
             .from("hike_photos")
             .select("*")
@@ -77,8 +88,9 @@ const Index = () => {
         })
       );
       setCampingTrips(tripsWithPhotos);
+    } catch (e: any) {
+      setError("Fetch error: " + (e.message || String(e)));
     }
-
     setLoading(false);
   };
 
@@ -87,72 +99,100 @@ const Index = () => {
   }, []);
 
   const addHike = async (hike: Hike) => {
-    const { data, error } = await supabase
-      .from("hikes")
-      .insert({
-        id: hike.id,
-        trail_name: hike.trailName,
-        location: hike.location,
-        miles: hike.miles,
-        date: hike.date,
-        notes: hike.notes,
-        created_at: hike.createdAt,
-      })
-      .select()
-      .single();
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("hikes")
+        .insert({
+          id: hike.id,
+          trail_name: hike.trailName,
+          location: hike.location,
+          miles: hike.miles,
+          date: hike.date,
+          notes: hike.notes,
+          created_at: hike.createdAt,
+        })
+        .select()
+        .single();
 
-    if (!error && hike.photos.length > 0) {
-      await supabase.from("hike_photos").insert(
-        hike.photos.map((p) => ({
-          id: p.id,
-          hike_id: hike.id,
-          photo_url: p.dataUrl,
-          caption: p.caption,
-          created_at: p.uploadedAt,
-        }))
-      );
+      if (error) {
+        setError("Error adding hike: " + error.message);
+        return;
+      }
+
+      if (hike.photos.length > 0) {
+        const { error: photoError } = await supabase.from("hike_photos").insert(
+          hike.photos.map((p) => ({
+            id: p.id,
+            hike_id: hike.id,
+            photo_url: p.dataUrl,
+            caption: p.caption,
+            created_at: p.uploadedAt,
+          }))
+        );
+        if (photoError) {
+          setError("Error adding photos: " + photoError.message);
+        }
+      }
+
+      fetchData();
+    } catch (e: any) {
+      setError("Add hike error: " + (e.message || String(e)));
     }
-
-    fetchData();
   };
 
   const deleteHike = async (id: string) => {
-    await supabase.from("hikes").delete().eq("id", id);
+    const { error } = await supabase.from("hikes").delete().eq("id", id);
+    if (error) setError("Error deleting hike: " + error.message);
     fetchData();
   };
 
   const addCamping = async (trip: CampingTrip) => {
-    const { data, error } = await supabase
-      .from("camping_trips")
-      .insert({
-        id: trip.id,
-        name: trip.name,
-        location: trip.location,
-        nights: trip.nights,
-        date: trip.date,
-        notes: trip.notes,
-        created_at: trip.createdAt,
-      })
-      .select()
-      .single();
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("camping_trips")
+        .insert({
+          id: trip.id,
+          name: trip.name,
+          location: trip.location,
+          nights: trip.nights,
+          date: trip.date,
+          notes: trip.notes,
+          created_at: trip.createdAt,
+        })
+        .select()
+        .single();
 
-    if (!error && trip.photos.length > 0) {
-      await supabase.from("hike_photos").insert(
-        trip.photos.map((p) => ({
-          id: p.id,
-          camping_trip_id: trip.id,
-          photo_url: p.dataUrl,
-          caption: p.caption,
-          created_at: p.uploadedAt,
-        }))
-      );
+      if (error) {
+        setError("Error adding camping trip: " + error.message);
+        return;
+      }
+
+      if (trip.photos.length > 0) {
+        const { error: photoError } = await supabase.from("hike_photos").insert(
+          trip.photos.map((p) => ({
+            id: p.id,
+            camping_trip_id: trip.id,
+            photo_url: p.dataUrl,
+            caption: p.caption,
+            created_at: p.uploadedAt,
+          }))
+        );
+        if (photoError) {
+          setError("Error adding photos: " + photoError.message);
+        }
+      }
+
+      fetchData();
+    } catch (e: any) {
+      setError("Add camping error: " + (e.message || String(e)));
     }
-
-    fetchData();
   };
 
   const deleteCamping = async (id: string) => {
-    await supabase.from("camping_trips").delete().eq("id", id);
+    const { error } = await supabase.from("camping_trips").delete().eq("id", id);
+    if (error) setError("Error deleting camping: " + error.message);
     fetchData();
   };
 
@@ -183,8 +223,17 @@ const Index = () => {
         </div>
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="max-w-4xl mx-auto px-4 py-2">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            {error}
+            <button onClick={() => setError(null)} className="ml-2 font-bold">x</button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {/* Summary Stats */}
         <SummaryStats hikes={hikes} campingTrips={campingTrips} />
 
         {loading ? (
@@ -233,7 +282,6 @@ const Index = () => {
         )}
       </div>
 
-      {/* Forms */}
       <AddHikeForm open={showHikeForm} onClose={() => setShowHikeForm(false)} onAdd={addHike} />
       <AddCampingForm open={showCampingForm} onClose={() => setShowCampingForm(false)} onAdd={addCamping} />
     </div>
